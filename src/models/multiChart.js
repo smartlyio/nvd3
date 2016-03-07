@@ -19,15 +19,15 @@ nv.models.multiChart = function() {
         useVoronoi = true,
         interactiveLayer = nv.interactiveGuideline(),
         useInteractiveGuideline = false,
-        legendRightAxisHint = ' (right axis)'
+        legendRightAxisHint = ' (right axis)',
+        xScale = d3.scale.linear()
         ;
 
     //============================================================
     // Private Variables
     //------------------------------------------------------------
 
-    var x = d3.scale.linear(),
-        yScale1 = d3.scale.linear(),
+    var yScale1 = d3.scale.linear(),
         yScale2 = d3.scale.linear(),
 
         lines1 = nv.models.line().yScale(yScale1),
@@ -42,7 +42,7 @@ nv.models.multiChart = function() {
         stack1 = nv.models.stackedArea().yScale(yScale1),
         stack2 = nv.models.stackedArea().yScale(yScale2),
 
-        xAxis = nv.models.axis().scale(x).orient('bottom').tickPadding(5),
+        xAxis = nv.models.axis(),
         yAxis1 = nv.models.axis().scale(yScale1).orient('left'),
         yAxis2 = nv.models.axis().scale(yScale2).orient('right'),
 
@@ -95,8 +95,8 @@ nv.models.multiChart = function() {
                     })
                 });
 
-            x   .domain(d3.extent(d3.merge(series1.concat(series2)), function(d) { return getX(d) }))
-                .range([0, availableWidth]);
+            xScale.domain(d3.extent(d3.merge(series1.concat(series2)), function(d) { return getX(d) }))
+                  .range([0, availableWidth]);
 
             var wrap = container.selectAll('g.wrap.multiChart').data([data]);
             var gEnter = wrap.enter().append('g').attr('class', 'wrap nvd3 multiChart').append('g');
@@ -238,6 +238,9 @@ nv.models.multiChart = function() {
             if(dataScatters2.length){d3.transition(scatters2Wrap).call(scatters2);}
 
             xAxis
+                .scale(xScale)
+                .orient('bottom')
+                .tickPadding(5)
                 ._ticks( nv.utils.calcTicksX(availableWidth/100, data) )
                 .tickSize(-availableHeight, 0);
 
@@ -263,11 +266,11 @@ nv.models.multiChart = function() {
 
             g.select('.nv-y1.nv-axis')
                 .classed('nv-disabled', series1.length ? false : true)
-                .attr('transform', 'translate(' + x.range()[0] + ',0)');
+                .attr('transform', 'translate(' + xScale.range()[0] + ',0)');
 
             g.select('.nv-y2.nv-axis')
                 .classed('nv-disabled', series2.length ? false : true)
-                .attr('transform', 'translate(' + x.range()[1] + ',0)');
+                .attr('transform', 'translate(' + xScale.range()[1] + ',0)');
 
             legend.dispatch.on('stateChange', function(newState) {
                 chart.update();
@@ -279,7 +282,7 @@ nv.models.multiChart = function() {
                     .height(availableHeight)
                     .margin({left:margin.left, top:margin.top})
                     .svgContainer(container)
-                    .xScale(x);
+                    .xScale(xScale);
                 wrap.select(".nv-interactive").call(interactiveLayer);
             }
 
@@ -394,7 +397,7 @@ nv.models.multiChart = function() {
                         return !series.disabled;
                     })
                     .forEach(function(series,i) {
-                        var extent = x.domain();
+                        var extent = xScale.domain();
                         var currentValues = series.values.filter(function(d,i) {
                             return chart.x()(d,i) >= extent[0] && chart.x()(d,i) <= extent[1];
                         });
@@ -407,7 +410,7 @@ nv.models.multiChart = function() {
                         }
                         if (point === undefined) return;
                         if (singlePoint === undefined) singlePoint = point;
-                        if (pointXLocation === undefined) pointXLocation = x(chart.x()(point,pointIndex));
+                        if (pointXLocation === undefined) pointXLocation = xScale(chart.x()(point,pointIndex));
                         allData.push({
                             key: series.key,
                             value: pointYValue,
@@ -514,6 +517,7 @@ nv.models.multiChart = function() {
         width:      {get: function(){return width;}, set: function(_){width=_;}},
         height:     {get: function(){return height;}, set: function(_){height=_;}},
         showLegend: {get: function(){return showLegend;}, set: function(_){showLegend=_;}},
+        xScale: {get: function(){return xScale;}, set: function(_){xScale=_;}},
         yDomain1:      {get: function(){return yDomain1;}, set: function(_){yDomain1=_;}},
         yDomain2:    {get: function(){return yDomain2;}, set: function(_){yDomain2=_;}},
         noData:    {get: function(){return noData;}, set: function(_){noData=_;}},
